@@ -55,6 +55,10 @@ button[active='1'] {
     border-radius: 3px;
 }
 
+.current {
+    box-shadow: inset 0 0 10px 10px yellow;
+}
+
 .kbd-navigation .square:focus {
     background: #ddd;
 }
