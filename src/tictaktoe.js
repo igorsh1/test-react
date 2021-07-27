@@ -1,5 +1,7 @@
 function Square(props) {
     let butClass;
+    let squareColor = {};
+    if (props.isWin) squareColor =  {boxShadow: 'inset 0 0 10px 10px yellow'};//{backgroundColor: 'yellow'};
     switch (props.value) {
         case null:
             butClass = "square";
@@ -11,10 +13,17 @@ function Square(props) {
             butClass = "square square_red";
     }
     return ( //style={{color: 'red'}}
-        <button className = { butClass }
+        <button className = { butClass }                
+                style={ squareColor }
                 onClick = { e => props.onClick(e) }> 
             { props.value } 
         </button>
+    );
+}
+
+function SquareRow(props) {
+    return (
+        <div className = "board-row" /*key = {props.i}*/ > {props.row} </div>  
     );
 }
 
@@ -22,17 +31,31 @@ class Board extends React.Component {
     renderSquare(i) {
         return (
             <Square value = { this.props.squares[i] }
+                    key = {i}
+                    isWin = { (this.props.winLine.length !==0) && (this.props.winLine.indexOf(i)!==-1) }
                     onClick = {(e) => this.props.onClick(e,i) } />
         ); 
     }
 
+    renderRow(i,arr){
+       return (//якщо ств декілька подібн комп в іншому обовязково треба передавати аттр key
+            <SquareRow row = {arr} key = {i} />
+       ); 
+    }
+
     render() {
+        let board = [];
+        let row =[];
+        for (let i = 0; i <= 2; i++) {
+            row[i]=[];
+            board[i]=[];
+            for (let j = 0; j <=2; j++) {
+                row[i].push(this.renderSquare(3*i+j));                
+            }  
+            board[i].push(this.renderRow(i,row[i]));          
+        }
         return ( 
-          <div>
-            <div className = "board-row" > { this.renderSquare(0) } { this.renderSquare(1) } { this.renderSquare(2) } </div> 
-            <div className = "board-row" > { this.renderSquare(3) } { this.renderSquare(4) } { this.renderSquare(5) } </div> 
-            <div className = "board-row" > { this.renderSquare(6) } { this.renderSquare(7) } { this.renderSquare(8) } </div>
-          </div>
+          <div> {board} </div>
         );
     }
 }
@@ -45,7 +68,7 @@ class Game extends React.Component {
                 squares: Array(9).fill(null)
             }],
             stepNumber: 0,
-            xIsNext: true
+            xIsNext: true,
         };
     }
 
@@ -55,9 +78,11 @@ class Game extends React.Component {
         const history = this.state.history.slice(0, this.state.stepNumber + 1);
         const current = history[history.length - 1];
         const squares = current.squares.slice();
-        var obj = e.target;
-        if (calculateWinner(squares)) return;
-        if (squares[i]) {
+        const obj = e.target;        
+        if (this.calculateWinner(squares).name) {//є переможець            
+            return;
+        }
+        if (squares[i]) {//натисли на заповнене вічко
             e.target.style.backgroundColor = 'magenta';
             setTimeout(() => { obj.style.backgroundColor = 'white'; }, 300);
             return;
@@ -80,10 +105,31 @@ class Game extends React.Component {
         });
     }
 
+    calculateWinner(squares) {
+        const lines = [
+            [0, 1, 2],
+            [3, 4, 5],
+            [6, 7, 8],
+            [0, 3, 6],
+            [1, 4, 7],
+            [2, 5, 8],
+            [0, 4, 8],
+            [2, 4, 6]
+        ];
+        for (let i = 0; i < lines.length; i++) {
+            const [a, b, c] = lines[i];
+            if (squares[a] && squares[a] === squares[b] && squares[a] === squares[c]) {
+                //this.setState({winLine: lines[i]}); бо викл в render а там змінювати стан неможна
+                return {name: squares[a], winLine: lines[i]};
+            }
+        }
+        return {name: null, winLine: []};
+    }
+
     render() {
         const history = this.state.history;
         const current = history[this.state.stepNumber];
-        const winner = calculateWinner(current.squares);
+        const winner = this.calculateWinner(current.squares);
 
         const moves = history.map((step, move) => {
             const desc = move ?
@@ -100,10 +146,10 @@ class Game extends React.Component {
 
         let status;
         let shadowColor;        
-        if (winner) {
-            status = "Winner: " + winner;
-            shadowColor = (winner=='X') ? 'blue':'red';                 
-        } else if (this.state.stepNumber==10) {            
+        if (winner.name) {
+            status = "Winner: " + winner.name;
+            shadowColor = (winner.name=='X') ? 'blue':'red';                 
+        } else if (this.state.stepNumber==9) {            
             status = 'Draw no winner';
             shadowColor = 'green';            
         } else {
@@ -118,7 +164,10 @@ class Game extends React.Component {
         return ( 
           <div className = "game">
             <div className = "game-board">
-              <Board squares = { current.squares } onClick = { (e,i)=> this.handleClick(e,i) } />
+                <Board squares = { current.squares } 
+                    winLine = { winner.winLine }
+                    onClick = { (e,i)=> this.handleClick(e,i) }
+                />
             </div> 
             <div className = "game-info">
               <div> { status } </div> 
@@ -133,22 +182,3 @@ class Game extends React.Component {
 
 ReactDOM.render( < Game / > , document.getElementById("tictaktoe"));
 
-function calculateWinner(squares) {
-    const lines = [
-        [0, 1, 2],
-        [3, 4, 5],
-        [6, 7, 8],
-        [0, 3, 6],
-        [1, 4, 7],
-        [2, 5, 8],
-        [0, 4, 8],
-        [2, 4, 6]
-    ];
-    for (let i = 0; i < lines.length; i++) {
-        const [a, b, c] = lines[i];
-        if (squares[a] && squares[a] === squares[b] && squares[a] === squares[c]) {
-            return squares[a];
-        }
-    }
-    return null;
-}
