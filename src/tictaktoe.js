@@ -73,7 +73,8 @@ class Game extends React.Component {
     }
 
     handleClick(e,i) {
-        if ((this.state.history.length > this.state.stepNumber + 1) && 
+        if ( this.state.stepNumber > 0  && //щоб не питало для нової гри
+            (this.state.history.length > this.state.stepNumber + 1) && 
             !confirm('History of your next steps will be deleted, continue?')) return;
         const history = this.state.history.slice(0, this.state.stepNumber + 1);
         const current = history[history.length - 1];
@@ -101,7 +102,7 @@ class Game extends React.Component {
     jumpTo(step) {
         this.setState({
             stepNumber: step,
-            xIsNext: (step % 2) === 0
+            xIsNext: (step % 2) === 0,            
         });
     }
 
@@ -137,7 +138,8 @@ class Game extends React.Component {
                 'Go to game start';
             return ( 
               <li key = { move }>
-                <button onClick = {() => this.jumpTo(move)}>
+                <button onClick = {() => this.jumpTo(move)}
+                        active = {(move == this.state.stepNumber)?1:0}>
                   { desc }
                 </button> 
               </li>
